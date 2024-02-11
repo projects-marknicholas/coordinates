@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Get Location Coordinates</title>
+<title>Get Location Coordinates and Postal Code</title>
 <script>
 function getLocation() {
   if (navigator.geolocation) {
@@ -18,6 +18,47 @@ function showPosition(position) {
   var longitude = position.coords.longitude;
   document.getElementById("latitude").innerHTML = "Latitude: " + latitude;
   document.getElementById("longitude").innerHTML = "Longitude: " + longitude;
+  getPostalCode(latitude, longitude);
+}
+
+function getPostalCode(latitude, longitude) {
+  var xhr = new XMLHttpRequest();
+  var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + latitude + '&lon=' + longitude;
+  
+  xhr.onreadystatechange = function() {
+      if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              var postalCode = response.address.postcode;
+              document.getElementById("postalCode").innerHTML = "Postal Code: " + postalCode;
+              fetchZipData(postalCode);
+          } else {
+              console.error('Error:', xhr.statusText);
+          }
+      }
+  };
+
+  xhr.open('GET', url, true);
+  xhr.send();
+}
+
+function fetchZipData(postalCode) {
+  var xhr = new XMLHttpRequest();
+  var url = 'https://api.zippopotam.us/ph/' + postalCode;
+
+  xhr.onreadystatechange = function() {
+      if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              document.getElementById("response").innerHTML = JSON.stringify(response, null, 2);
+          } else {
+              console.error('Error:', xhr.statusText);
+          }
+      }
+  };
+
+  xhr.open('GET', url, true);
+  xhr.send();
 }
 
 function showError(error) {
@@ -36,12 +77,32 @@ function showError(error) {
       break;
   }
 }
+
+function openMapsApp(destinationLatitude, destinationLongitude) {
+  if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var latitude = position.coords.latitude;
+      var longitude = position.coords.longitude;
+      var url = "https://maps.google.com/maps?saddr=" + latitude + "," + longitude + "&daddr=" + destinationLatitude + "," + destinationLongitude;
+      window.open(url);
+    });
+  } else {
+    alert("Geolocation is not supported by this browser.");
+  }
+}
 </script>
 </head>
 <body>
-<h2>Get Your Location Coordinates</h2>
-<button onclick="getLocation()">Get Coordinates</button>
+<h2>Get Your Location Coordinates and Postal Code</h2>
+<button onclick="getLocation()">Get Coordinates and Postal Code</button>
 <p id="latitude"></p>
 <p id="longitude"></p>
+<p id="postalCode"></p>
+<h2>Response</h2>
+<pre id="response"></pre>
+
+<!-- Button to open maps application -->
+<button onclick="openMapsApp(14.1774, 121.2727)">Get Directions</button>
+
 </body>
 </html>
